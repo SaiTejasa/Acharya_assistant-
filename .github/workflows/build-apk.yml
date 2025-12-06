@@ -1,0 +1,51 @@
+name: Build Acharya APK
+
+# Trigger: can run manually or on push to your branch
+on:
+  workflow_dispatch:           # allows you to run manually from Actions tab
+  push:
+    branches:
+      - Acharya      # <-- replace with your branch name
+
+jobs:
+  build:
+    name: Build debug APK
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Android SDK tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip wget
+          mkdir -p $ANDROID_SDK_ROOT
+          cd $ANDROID_SDK_ROOT
+          wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip -O cmdline.zip
+          unzip -q cmdline.zip -d cmdline-tools
+          mkdir -p cmdline-tools/latest
+          mv cmdline-tools/* cmdline-tools/latest/
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+
+      - name: Grant execute to gradlew
+        run: chmod +x ./gradlew
+
+      - name: Build APK
+        env:
+          OPENROUTER_KEY: ${{ secrets.OPENROUTER_KEY }}
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload artifact APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: acharya-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
