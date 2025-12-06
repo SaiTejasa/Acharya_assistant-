@@ -1,0 +1,1 @@
+This is a placeholder minimal project. Full Android Studio project generation is too large. Please request specific files one-by-one.
